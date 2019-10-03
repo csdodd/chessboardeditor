@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.widget.TableLayout
 import android.widget.TableRow
+import no.bakkenbaeck.chessboardeditor.model.DraggedPiece
 import no.bakkenbaeck.chessboardeditor.util.Constants.BOARD_SIZE
 
 abstract class ChessRowView @JvmOverloads constructor(
@@ -13,9 +14,10 @@ abstract class ChessRowView @JvmOverloads constructor(
 
     protected open fun setRow(
         rowIndex: Int,
-        onDragEnded: ((cellTag: String, pieceTag: String) -> Unit)
+        onDragEnded: (cellTag: String, pieceTag: String) -> Unit,
+        onDragLocation: (draggedPiece: DraggedPiece) -> Unit
     ) {
-        insertCells(rowIndex, onDragEnded)
+        insertCells(rowIndex, onDragEnded, onDragLocation)
     }
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
@@ -32,6 +34,7 @@ abstract class ChessRowView @JvmOverloads constructor(
 
     abstract fun insertCells(
         rowIndex: Int,
-        onDragEnded: ((cellTag: String, pieceTag: String) -> Unit)
+        onDragEnded: ((cellTag: String, pieceTag: String) -> Unit),
+        onDragLocation: ((draggedPiece: DraggedPiece) -> Unit)
     )
 }

@@ -1,2 +1,2 @@
-include ':chessboardeditor'
+include ':chessboardeditor', ':sample'
 rootProject.name='ChessBoardEditor'

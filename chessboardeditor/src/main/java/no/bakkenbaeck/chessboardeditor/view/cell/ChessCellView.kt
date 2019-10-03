@@ -7,6 +7,7 @@ import android.widget.FrameLayout
 import android.widget.TableRow
 import no.bakkenbaeck.chessboardeditor.R
 import no.bakkenbaeck.chessboardeditor.listener.CellOnDragListener
+import no.bakkenbaeck.chessboardeditor.model.DraggedPiece
 import no.bakkenbaeck.chessboardeditor.view.piece.ChessPieceView
 
 abstract class ChessCellView @JvmOverloads constructor(
@@ -31,8 +32,15 @@ abstract class ChessCellView @JvmOverloads constructor(
         return rowColList[0] to rowColList[1]
     }
 
-    fun setOnDragEnded(onDragEnded: ((cellTag: String, pieceTag: String) -> Unit)) {
-        setOnDragListener(CellOnDragListener { view, dragData -> onDragEnded(view, dragData) })
+    fun setOnDragListeners(
+        onDragEnded: ((cellTag: String, pieceTag: String) -> Unit),
+        onDragLocation: ((draggedPiece: DraggedPiece) -> Unit)
+    ) {
+        setOnDragListener(
+            CellOnDragListener(
+                { view, dragData -> onDragEnded(view, dragData) },
+                { draggedPiece -> onDragLocation(draggedPiece)}
+            ))
     }
 
     fun setRowCol(row: Int, col: Int) {

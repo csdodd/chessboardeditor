@@ -1,14 +1,14 @@
 package no.bakkenbaeck.chessboardeditor.view.board
 
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import android.widget.TableLayout
-import no.bakkenbaeck.chessboardeditor.model.FenParseException
-import no.bakkenbaeck.chessboardeditor.model.Move
-import no.bakkenbaeck.chessboardeditor.model.Piece
-import no.bakkenbaeck.chessboardeditor.model.Position
+import no.bakkenbaeck.chessboardeditor.model.*
 import no.bakkenbaeck.chessboardeditor.util.Constants.BOARD_SIZE
 import no.bakkenbaeck.chessboardeditor.util.FenUtil
 import no.bakkenbaeck.chessboardeditor.view.cell.ChessCellView
@@ -31,6 +31,8 @@ class ChessBoardView @JvmOverloads constructor(
     }
 
     private lateinit var position: Position
+
+    private val draggedPieces = mutableListOf<DraggedPiece>()
 
     init {
         setFen("")
@@ -65,7 +67,7 @@ class ChessBoardView @JvmOverloads constructor(
 
     private fun insertSideRow(isWhite: Boolean) {
         val row = ChessSideRowView(context)
-        row.setSide(isWhite, ::pieceDragged)
+        row.setSide(isWhite, ::pieceDragEnded, ::pieceDragged)
         addView(row)
     }
 
@@ -75,15 +77,15 @@ class ChessBoardView @JvmOverloads constructor(
 
     private fun insertRow(rowIndex: Int) {
         val row = ChessInnerRowView(context)
-        row.setRow(rowIndex, ::pieceDragged)
+        row.setRow(rowIndex, ::pieceDragEnded, ::pieceDragged)
         addView(row)
     }
 
-    private fun pieceDragged(cellTag: String, pieceTag: String) {
+    private fun pieceDragEnded(cellTag: String, pieceTag: String) {
         val pieceView = this@ChessBoardView.findViewWithTag<View>(pieceTag) as? ChessPieceView ?: return
         val fromCell = pieceView.parent as? ChessCellView ?: return
         val toCell = this@ChessBoardView.findViewWithTag<View>(cellTag) as? ChessInnerCellView ?: return
-        val piece = pieceView.getPiece() ?: return
+        val piece = pieceView.piece ?: return
 
         if (fromCell is ChessInnerCellView) {
             applyNormalPieceMove(fromCell, toCell, pieceView)
@@ -91,6 +93,11 @@ class ChessBoardView @JvmOverloads constructor(
             if (piece is Piece.Delete) applyRemovePieceMove(toCell)
             else applyInsertPieceMove(fromCell, toCell, piece)
         }
+    }
+
+    private fun pieceDragged(draggedPiece: DraggedPiece) {
+        draggedPieces.add(draggedPiece)
+        invalidate()
     }
 
     private fun applyNormalPieceMove(
@@ -148,7 +155,7 @@ class ChessBoardView @JvmOverloads constructor(
         piece: Piece
     ) {
         val clonePieceView = ChessPieceView(context)
-        clonePieceView.setPiece(piece)
+        clonePieceView.piece = piece
         toCell.setPiece(clonePieceView)
     }
 
@@ -166,7 +173,7 @@ class ChessBoardView @JvmOverloads constructor(
             val tag = ChessCellView.getTagFromRowCol(row, col)
             val cell = findViewWithTag<ChessCellView>(tag) ?: return@forEach
             val pieceView = ChessPieceView(context)
-            pieceView.setPiece(piece)
+            pieceView.piece = piece
             cell.setPiece(pieceView)
         }
     }
@@ -192,5 +199,39 @@ class ChessBoardView @JvmOverloads constructor(
     private fun setWidthHeight(width: Int, height: Int) {
         layoutParams.width = width
         layoutParams.height = height
+    }
+
+    private val paint: Paint by lazy { initPaint() }
+
+    private fun initPaint(): Paint {
+        val paint = Paint()
+        paint.strokeWidth = 4.0f
+        paint.color = Color.RED
+        return paint
+    }
+
+    override fun dispatchDraw(canvas: Canvas?) {
+        super.dispatchDraw(canvas)
+        for (draggedPiece in draggedPieces) {
+
+            val pieceView = this@ChessBoardView.findViewWithTag<View>(draggedPiece.pieceTag) as? ChessPieceView ?: continue
+            val piece = pieceView.piece
+            val toCell = this@ChessBoardView.findViewWithTag<View>(draggedPiece.cellTag) as? ChessInnerCellView ?: continue
+            val legalMoves = piece?.getLegalMovesForPiece(toCell) ?: arrayListOf()
+            val parent = toCell.parent as? ChessInnerRowView ?: continue
+
+            for (legalMove in legalMoves) {
+                val legalCell = this@ChessBoardView.findViewWithTag<View>(legalMove) as? ChessInnerCellView ?: continue
+                val legalParent = legalCell.parent as? ChessInnerRowView ?: continue
+                canvas?.drawLine(
+                    toCell.x + draggedPiece.x,
+                    parent.y + draggedPiece.y,
+                    legalCell.x + (legalCell.width / 2),
+                    legalParent.y + (legalParent.height / 2),
+                    paint)
+
+            }
+        }
+        draggedPieces.clear()
     }
 }

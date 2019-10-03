@@ -16,20 +16,17 @@ class ChessPieceView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : ImageView(context, attrs, defStyleAttr) {
 
-    private var piece: Piece? = null
+    var piece: Piece? = null
+        set(value) {
+            field = value
+            setImageResource(value?.drawableRes ?: -1)
+            setDragDropListener()
+        }
 
     init {
         setLayoutParams()
         tag = "piece_view_${View.generateViewId()}"
     }
-
-    fun setPiece(piece: Piece) {
-        this.piece = piece
-        setImageResource(piece.drawableRes)
-        setDragDropListener()
-    }
-
-    fun getPiece() = piece
 
     private fun setLayoutParams() {
         val params = layoutParams as? FrameLayout.LayoutParams ?: return
