@@ -201,34 +201,44 @@ class ChessBoardView @JvmOverloads constructor(
         layoutParams.height = height
     }
 
-    private val paint: Paint by lazy { initPaint() }
+    private val movePaint: Paint by lazy { initMovePaint() }
+    private val capturePaint: Paint by lazy { initCapturePaint() }
 
-    private fun initPaint(): Paint {
+    private fun initMovePaint(): Paint {
         val paint = Paint()
         paint.strokeWidth = 4.0f
         paint.color = Color.RED
         return paint
     }
 
+    private fun initCapturePaint(): Paint {
+        val paint = Paint()
+        paint.strokeWidth = 4.0f
+        paint.color = Color.GREEN
+        return paint
+    }
+
     override fun dispatchDraw(canvas: Canvas?) {
         super.dispatchDraw(canvas)
         for (draggedPiece in draggedPieces) {
-
             val pieceView = this@ChessBoardView.findViewWithTag<View>(draggedPiece.pieceTag) as? ChessPieceView ?: continue
             val piece = pieceView.piece
             val toCell = this@ChessBoardView.findViewWithTag<View>(draggedPiece.cellTag) as? ChessInnerCellView ?: continue
-            val legalMoves = piece?.getLegalMovesForPiece(toCell) ?: arrayListOf()
+            val legalMoves = piece?.getLegalMovesForPiece(toCell, position) ?: arrayListOf()
             val parent = toCell.parent as? ChessInnerRowView ?: continue
 
             for (legalMove in legalMoves) {
-                val legalCell = this@ChessBoardView.findViewWithTag<View>(legalMove) as? ChessInnerCellView ?: continue
+
+                if (!legalMove.render) continue
+
+                val legalCell = this@ChessBoardView.findViewWithTag<View>(legalMove.toCellTag) as? ChessInnerCellView ?: continue
                 val legalParent = legalCell.parent as? ChessInnerRowView ?: continue
                 canvas?.drawLine(
                     toCell.x + draggedPiece.x,
                     parent.y + draggedPiece.y,
                     legalCell.x + (legalCell.width / 2),
                     legalParent.y + (legalParent.height / 2),
-                    paint)
+                    if(legalMove.isCapture) capturePaint else movePaint)
 
             }
         }
